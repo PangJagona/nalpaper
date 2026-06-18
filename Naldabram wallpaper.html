@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0c0c0e">
+<title>Wallpaper &amp; Renungan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#F7F4EC;
+    --ink-dim:rgba(247,244,236,0.74);
+    --ink-faint:rgba(247,244,236,0.46);
+    --accent:#D8B25C;
+    --glass-bg:rgba(12,12,14,0.46);
+    --glass-bg-strong:rgba(10,10,11,0.66);
+    --glass-border:rgba(255,255,255,0.16);
+    --radius:14px;
+    --serif:'Fraunces', Georgia, serif;
+    --mono:'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+    background:linear-gradient(160deg,#181820,#26242e 60%,#1c1a22);
+    font-family:var(--mono); color:var(--ink);
+  }
+  /* ---------- background layers ---------- */
+  .bg-layer{
+    position:fixed; inset:0; background-size:cover; background-position:center;
+    opacity:0; transition:opacity 1.4s var(--ease); will-change:opacity;
+  }
+  #bgA{opacity:1;}
+  .vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:2;
+    background:
+      linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.0) 28%),
+      linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.0) 22%);
+  }
+  /* ---------- HUD ---------- */
+  .hud{position:fixed; inset:0; z-index:3; pointer-events:none;}
+  .clock-widget{
+    position:absolute; top:max(28px, env(safe-area-inset-top)); right:max(28px, env(safe-area-inset-right));
+    text-align:right; text-shadow:0 2px 18px rgba(0,0,0,0.55);
+  }
+  .clock-widget .time{
+    font-family:var(--mono); font-weight:300; font-size:clamp(2.4rem,6vw,4.6rem);
+    letter-spacing:0.02em; line-height:1; font-variant-numeric:tabular-nums;
+  }
+  .clock-widget .date{
+    margin-top:6px; font-size:clamp(0.7rem,1.3vw,0.95rem); letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-dim);
+  }
+  .edge-nav{
+    position:absolute; top:0; bottom:0; width:14%; max-width:160px;
+    display:flex; align-items:center; pointer-events:auto; cursor:pointer;
+    opacity:0; transition:opacity .25s var(--ease); user-select:none;
+  }
+  .edge-nav:hover{opacity:1;}
+  .edge-nav.left{left:0; justify-content:flex-start; padding-left:14px;}
+  .edge-nav.right{right:0; justify-content:flex-end; padding-right:14px;}
+  .edge-nav span{
+    font-size:2.2rem; font-family:var(--serif); color:var(--ink);
+    text-shadow:0 2px 14px rgba(0,0,0,0.6);
+  }
+  .quote-strip{
+    position:absolute; left:0; right:0; bottom:0; z-index:3; pointer-events:auto; cursor:pointer;
+    padding:26px max(28px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom));
+    border-top:1px solid rgba(216,178,92,0.35);
+    background:linear-gradient(to top, rgba(8,8,9,0.42), rgba(8,8,9,0));
+    backdrop-filter:blur(2px);
+  }
+  .quote-text{
+    margin:0 auto 10px; max-width:780px; text-align:center;
+    font-family:var(--serif); font-style:italic; font-weight:400;
+    font-size:clamp(1rem,2.1vw,1.5rem); line-height:1.5; color:var(--ink);
+    text-shadow:0 2px 14px rgba(0,0,0,0.5);
+  }
+  .quote-ref{
+    margin:0; text-align:center; font-family:var(--mono); font-size:0.72rem;
+    letter-spacing:0.18em; text-transform:uppercase; color:var(--accent);
+  }
+  .attribution{
+    position:absolute; left:max(20px, env(safe-area-inset-left)); bottom:max(14px, env(safe-area-inset-bottom));
+    font-size:0.68rem; color:var(--ink-faint); letter-spacing:0.03em; max-width:50%;
+    z-index:4;
+  }
+  .fab{
+    position:absolute; z-index:5; pointer-events:auto; width:42px; height:42px; border-radius:50%;
+    background:var(--glass-bg); border:1px solid var(--glass-border); color:var(--ink-dim);
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem; cursor:pointer;
+    backdrop-filter:blur(8px); transition:opacity .2s var(--ease), background .2s var(--ease);
+    opacity:0.55;
+  }
+  .fab:hover{opacity:1; background:var(--glass-bg-strong);}
+  .fab:focus-visible{outline:2px solid var(--accent); outline-offset:2px; opacity:1;}
+  #settingsToggle{bottom:max(20px, env(safe-area-inset-bottom)); right:max(20px, env(safe-area-inset-right));}
+  #fullscreenToggle{bottom:max(20px, env(safe-area-inset-bottom)); right:max(72px, calc(env(safe-area-inset-right) + 52px));}
+  /* ---------- settings panel ---------- */
+  .settings-panel{
+    position:fixed; top:0; right:0; bottom:0; z-index:10;
+    width:min(380px, 92vw); transform:translateX(100%); transition:transform .35s var(--ease);
+    background:var(--glass-bg-strong); backdrop-filter:blur(18px); border-left:1px solid var(--glass-border);
+    padding:28px 24px max(28px, env(safe-area-inset-bottom)); overflow-y:auto;
+    font-family:var(--mono);
+  }
+  .settings-panel.open{transform:translateX(0);}
+  .settings-panel h2{
+    font-family:var(--serif); font-style:italic; font-weight:500; font-size:1.5rem; margin:0 0 22px; color:var(--ink);
+  }
+  .settings-panel section{margin-bottom:26px; padding-bottom:22px; border-bottom:1px solid rgba(255,255,255,0.08);}
+  .settings-panel section:last-of-type{border-bottom:none;}
+  .settings-panel h3{
+    font-size:0.7rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent);
+    margin:0 0 14px; font-weight:500;
+  }
+  .settings-panel label{
+    display:flex; align-items:center; gap:10px; font-size:0.85rem; color:var(--ink-dim);
+    margin-bottom:10px; cursor:pointer;
+  }
+  .settings-panel select, .settings-panel input[type=range]{width:100%;}
+  .settings-panel select{
+    background:rgba(255,255,255,0.06); color:var(--ink); border:1px solid var(--glass-border);
+    border-radius:8px; padding:8px 10px; font-family:var(--mono); font-size:0.82rem; margin-bottom:10px;
+  }
+  .btn{
+    background:rgba(255,255,255,0.07); color:var(--ink); border:1px solid var(--glass-border);
+    border-radius:8px; padding:9px 14px; font-family:var(--mono); font-size:0.78rem; cursor:pointer;
+    transition:background .2s var(--ease);
+  }
+  .btn:hover{background:rgba(255,255,255,0.14);}
+  .btn.accent{border-color:rgba(216,178,92,0.5); color:var(--accent);}
+  .presets{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .presets .btn{padding:6px 11px; font-size:0.72rem;}
+  .presets .btn.active{background:rgba(216,178,92,0.18); border-color:var(--accent); color:var(--accent);}
+  #intervalLabel{display:block; text-align:center; font-size:0.85rem; color:var(--ink-dim); margin-top:8px;}
+  .thumb-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0;}
+  .thumb{position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--glass-border);}
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .thumb button{
+    position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+    background:rgba(0,0,0,0.6); color:#fff; border:none; font-size:0.7rem; cursor:pointer; line-height:1;
+  }
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .close-panel{
+    position:sticky; bottom:0; width:100%; margin-top:10px;
+  }
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:rgba(20,20,22,0.92); color:var(--ink); padding:10px 18px; border-radius:10px;
+    font-size:0.78rem; border:1px solid var(--glass-border); z-index:20; opacity:0; pointer-events:none;
+    transition:opacity .3s var(--ease), transform .3s var(--ease); max-width:80vw; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  @media (max-width:560px){
+    .clock-widget{top:max(20px, env(safe-area-inset-top)); right:max(18px, env(safe-area-inset-right));}
+    .edge-nav{display:none;}
+    .quote-strip{padding:20px 18px max(18px, env(safe-area-inset-bottom));}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .bg-layer, .settings-panel, .toast, .fab{transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer" id="bgA"></div>
+<div class="bg-layer" id="bgB"></div>
+<div class="vignette"></div>
+
+<main class="hud">
+  <div class="clock-widget">
+    <div class="time" id="timeDisplay">00:00</div>
+    <div class="date" id="dateDisplay">—</div>
+  </div>
+
+  <div class="edge-nav left" id="prevZone" title="Wallpaper sebelumnya"><span>‹</span></div>
+  <div class="edge-nav right" id="nextZone" title="Wallpaper berikutnya"><span>›</span></div>
+
+  <footer class="quote-strip" id="quoteStrip" title="Klik untuk ganti renungan">
+    <p class="quote-text" id="quoteText">Memuat renungan…</p>
+    <p class="quote-ref" id="quoteRef"></p>
+  </footer>
+
+  <p class="attribution" id="attribution"></p>
+
+  <button class="fab" id="fullscreenToggle" aria-label="Layar penuh">⤢</button>
+  <button class="fab" id="settingsToggle" aria-label="Pengaturan">⚙</button>
+</main>
+
+<aside class="settings-panel" id="settingsPanel" aria-hidden="true">
+  <h2>Pengaturan</h2>
+
+  <section>
+    <h3>Sumber Wallpaper</h3>
+    <label><input type="radio" name="source" value="bing" id="sourceBing"> Bing Wallpaper (otomatis)</label>
+    <label><input type="radio" name="source" value="custom" id="sourceCustom"> Galeri saya</label>
+
+    <div id="bingOptions">
+      <select id="marketSelect">
+        <option value="id-ID">Indonesia</option>
+        <option value="en-US">Amerika Serikat</option>
+        <option value="en-GB">Inggris</option>
+        <option value="en-AU">Australia</option>
+        <option value="ja-JP">Jepang</option>
+        <option value="zh-CN">Tiongkok</option>
+        <option value="fr-FR">Prancis</option>
+        <option value="de-DE">Jerman</option>
+        <option value="en-IN">India</option>
+        <option value="en-CA">Kanada</option>
+      </select>
+      <button class="btn" id="refreshBing">↻ Muat ulang dari Bing</button>
+    </div>
+
+    <div id="customOptions" style="display:none;">
+      <div class="row" style="margin-bottom:10px;">
+        <button class="btn accent" id="addImagesBtn">+ Tambah gambar</button>
+        <button class="btn" id="clearCustom">Hapus semua</button>
+      </div>
+      <div class="thumb-grid" id="thumbGrid"></div>
+    </div>
+  </section>
+
+  <section>
+    <h3>Durasi Pergantian</h3>
+    <div class="presets" id="presets">
+      <button class="btn" data-sec="15">15 dtk</button>
+      <button class="btn" data-sec="60">1 mnt</button>
+      <button class="btn" data-sec="300">5 mnt</button>
+      <button class="btn" data-sec="900">15 mnt</button>
+      <button class="btn" data-sec="1800">30 mnt</button>
+      <button class="btn" data-sec="3600">1 jam</button>
+    </div>
+    <input type="range" id="intervalRange" min="10" max="3600" step="5">
+    <span id="intervalLabel">5 menit</span>
+  </section>
+
+  <section>
+    <h3>Jam Digital</h3>
+    <label><input type="checkbox" id="format24"> Format 24 jam</label>
+    <label><input type="checkbox" id="showSeconds"> Tampilkan detik</label>
+  </section>
+
+  <button class="btn close-panel" id="closeSettings">Tutup pengaturan</button>
+</aside>
+
+<input type="file" id="customFileInput" accept="image/*" multiple hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===================== KUTIPAN ALKITAB ===================== */
+  const QUOTES = [
+    {ref:"Yohanes 3:16", text:"Karena begitu besar kasih Allah akan dunia ini, sehingga Ia mengaruniakan Anak-Nya yang tunggal, supaya setiap orang yang percaya kepada-Nya tidak binasa, melainkan beroleh hidup yang kekal."},
+    {ref:"Mazmur 23:1", text:"TUHAN adalah gembalaku, takkan kekurangan aku."},
+    {ref:"Filipi 4:13", text:"Aku dapat menanggung segala perkara di dalam Dia yang memberi kekuatan kepadaku."},
+    {ref:"Yeremia 29:11", text:"Sebab Aku mengetahui rancangan damai sejahtera bagimu, demikianlah firman TUHAN, untuk memberikan kepadamu hari depan yang penuh harapan."},
+    {ref:"Mazmur 46:1", text:"Allah itu bagi kita tempat perlindungan dan kekuatan, sebagai penolong dalam kesesakan."},
+    {ref:"Roma 8:28", text:"Allah turut bekerja dalam segala sesuatu untuk mendatangkan kebaikan bagi mereka yang mengasihi Dia."},
+    {ref:"Yosua 1:9", text:"Janganlah takut dan janganlah kecut hati, sebab TUHAN, Allahmu, menyertai engkau, ke manapun engkau pergi."},
+    {ref:"Mazmur 119:105", text:"Firman-Mu itu pelita bagi kakiku dan terang bagi jalanku."},
+    {ref:"Yesaya 41:10", text:"Janganlah takut, sebab Aku menyertai engkau, janganlah bimbang, sebab Aku ini Allahmu."},
+    {ref:"Filipi 4:6", text:"Janganlah kuatir tentang apapun, tetapi nyatakanlah keinginanmu kepada Allah dalam doa dan permohonan."},
+    {ref:"Matius 6:33", text:"Carilah dahulu Kerajaan Allah dan kebenarannya, maka semuanya itu akan ditambahkan kepadamu."},
+    {ref:"Mazmur 37:4", text:"Bergembiralah karena TUHAN, maka Ia akan memberikan kepadamu apa yang dikehendaki hatimu."},
+    {ref:"Roma 12:2", text:"Berubahlah oleh pembaharuan budimu, sehingga kamu dapat membedakan manakah kehendak Allah."},
+    {ref:"1 Korintus 13:4", text:"Kasih itu sabar; kasih itu murah hati."},
+    {ref:"Mazmur 27:1", text:"TUHAN adalah terangku dan keselamatanku, kepada siapakah aku harus takut?"},
+    {ref:"Galatia 5:22", text:"Buah Roh ialah kasih, sukacita, damai sejahtera, kesabaran, kemurahan, kebaikan, dan kesetiaan."},
+    {ref:"Mazmur 121:2", text:"Pertolonganku ialah dari TUHAN, yang menjadikan langit dan bumi."},
+    {ref:"Yohanes 14:6", text:"Akulah jalan dan kebenaran dan hidup. Tidak ada seorang pun yang datang kepada Bapa, kalau tidak melalui Aku."},
+    {ref:"Amsal 3:5", text:"Percayalah kepada TUHAN dengan segenap hatimu, dan janganlah bersandar kepada pengertianmu sendiri."},
+    {ref:"Mazmur 91:1", text:"Orang yang duduk dalam lindungan Yang Mahatinggi akan bermalam dalam naungan Yang Mahakuasa."},
+    {ref:"Lukas 1:37", text:"Sebab bagi Allah tidak ada yang mustahil."},
+    {ref:"2 Korintus 5:17", text:"Siapa yang ada di dalam Kristus, ia adalah ciptaan baru."},
+    {ref:"Mazmur 34:8", text:"Kecaplah dan lihatlah, betapa baiknya TUHAN itu! Berbahagialah orang yang berlindung pada-Nya."},
+    {ref:"Ibrani 11:1", text:"Iman adalah dasar dari segala sesuatu yang kita harapkan dan bukti dari segala sesuatu yang tidak kita lihat."},
+    {ref:"Mazmur 73:26", text:"Sekalipun tubuhku dan hatiku habis lenyap, gunung batuku dan bagianku tetaplah Allah selama-lamanya."},
+    {ref:"Matius 11:28", text:"Marilah kepada-Ku, semua yang letih lesu dan berat beban, Aku akan memberi kelegaan kepadamu."},
+    {ref:"1 Petrus 5:7", text:"Serahkanlah segala kekuatiranmu kepada-Nya, sebab Ia yang memelihara kamu."},
+    {ref:"Mazmur 139:14", text:"Aku bersyukur kepada-Mu oleh karena Engkau dahsyat dan ajaib; ajaib apa yang Engkau buat."},
+    {ref:"Filipi 4:19", text:"Allahku akan memenuhi segala keperluanmu menurut kekayaan dan kemuliaan-Nya dalam Kristus Yesus."},
+    {ref:"Yohanes 16:33", text:"Dunia ini penuh penderitaan, tetapi kuatkanlah hatimu, Aku telah mengalahkan dunia."},
+    {ref:"Mazmur 16:11", text:"Engkau memberitahukan kepadaku jalan kehidupan; di hadapan-Mu ada sukacita berlimpah-limpah."},
+    {ref:"Kolose 3:23", text:"Apa pun yang kamu perbuat, perbuatlah dengan segenap hatimu seperti untuk Tuhan dan bukan untuk manusia."},
+    {ref:"Mazmur 30:5", text:"Kemurahan-Nya hanya sesaat, tetapi kebaikan-Nya berlangsung sepanjang hidup."},
+    {ref:"Ulangan 31:6", text:"Kuatkan dan teguhkanlah hatimu, sebab TUHAN, Allahmu, sendiri yang berjalan menyertai engkau."},
+    {ref:"Mazmur 56:3", text:"Pada waktu aku takut, aku ini percaya kepada-Mu."},
+    {ref:"2 Timotius 1:7", text:"Allah tidak memberikan kepada kita roh ketakutan, tetapi roh yang membangkitkan kekuatan, kasih, dan ketertiban."},
+    {ref:"Mazmur 90:2", text:"Sebelum gunung-gunung dijadikan, sebelum bumi dan dunia diperanakkan, Engkau telah ada, ya Allah, selama-lamanya."},
+    {ref:"Mazmur 118:24", text:"Inilah hari yang dijadikan TUHAN, marilah kita bersorak-sorak dan bersukacita karenanya."}
+  ];
+
+  /* ===================== STATE & STORAGE ===================== */
+  const SETTINGS_KEY = "wpapp_settings_v1";
+  const CUSTOM_KEY = "wpapp_custom_v1";
+  const DEFAULTS = { source:"bing", market:"id-ID", intervalSec:300, format24:true, showSeconds:false };
+
+  function safeGet(key){
+    try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch(e){ return null; }
+  }
+  function safeSet(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch(e){ return false; }
+  }
+
+  let settings = Object.assign({}, DEFAULTS, safeGet(SETTINGS_KEY) || {});
+  let customImages = safeGet(CUSTOM_KEY) || [];
+  let wallpapers = [];
+  let currentIndex = 0;
+  let rotationTimer = null;
+  let shuffled = [];
+  let quoteCursor = -1;
+
+  /* ===================== ELEMENTS ===================== */
+  const bgA = document.getElementById("bgA");
+  const bgB = document.getElementById("bgB");
+  let activeLayer = bgA, inactiveLayer = bgB;
+
+  const timeDisplay = document.getElementById("timeDisplay");
+  const dateDisplay = document.getElementById("dateDisplay");
+  const quoteText = document.getElementById("quoteText");
+  const quoteRef = document.getElementById("quoteRef");
+  const quoteStrip = document.getElementById("quoteStrip");
+  const attribution = document.getElementById("attribution");
+  const toastEl = document.getElementById("toast");
+
+  const settingsPanel = document.getElementById("settingsPanel");
+  const settingsToggle = document.getElementById("settingsToggle");
+  const closeSettings = document.getElementById("closeSettings");
+  const fullscreenToggle = document.getElementById("fullscreenToggle");
+
+  const sourceBing = document.getElementById("sourceBing");
+  const sourceCustom = document.getElementById("sourceCustom");
+  const bingOptions = document.getElementById("bingOptions");
+  const customOptions = document.getElementById("customOptions");
+  const marketSelect = document.getElementById("marketSelect");
+  const refreshBing = document.getElementById("refreshBing");
+  const addImagesBtn = document.getElementById("addImagesBtn");
+  const clearCustom = document.getElementById("clearCustom");
+  const thumbGrid = document.getElementById("thumbGrid");
+  const customFileInput = document.getElementById("customFileInput");
+
+  const presets = document.getElementById("presets");
+  const intervalRange = document.getElementById("intervalRange");
+  const intervalLabel = document.getElementById("intervalLabel");
+  const format24 = document.getElementById("format24");
+  const showSeconds = document.getElementById("showSeconds");
+
+  const prevZone = document.getElementById("prevZone");
+  const nextZone = document.getElementById("nextZone");
+
+  /* ===================== TOAST ===================== */
+  let toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove("show"), 3600);
+  }
+
+  /* ===================== JAM DIGITAL ===================== */
+  function updateClock(){
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+    let suffix = "";
+    if(!settings.format24){
+      suffix = h >= 12 ? " PM" : " AM";
+      h = h % 12; if(h === 0) h = 12;
+    }
+    const pad = n => String(n).padStart(2,"0");
+    let str = pad(h) + ":" + pad(m);
+    if(settings.showSeconds) str += ":" + pad(s);
+    str += suffix;
+    timeDisplay.textContent = str;
+    dateDisplay.textContent = now.toLocaleDateString("id-ID", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  }
+  setInterval(updateClock, 1000);
+
+  /* ===================== QUOTES ===================== */
+  function shuffleQuotes(){
+    shuffled = QUOTES.map((q,i)=>({...q,i})).sort(()=>Math.random()-0.5);
+    quoteCursor = -1;
+  }
+  function nextQuote(){
+    quoteCursor++;
+    if(quoteCursor >= shuffled.length){ shuffleQuotes(); quoteCursor = 0; }
+    renderQuote();
+  }
+  function renderQuote(){
+    const q = shuffled[quoteCursor];
+    quoteText.textContent = "\u201C" + q.text + "\u201D";
+    quoteRef.textContent = q.ref;
+  }
+  quoteStrip.addEventListener("click", nextQuote);
+
+  /* ===================== IMAGE HELPERS ===================== */
+  function testImage(url){
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.onload = ()=> resolve(true);
+      img.onerror = ()=> resolve(false);
+      img.src = url;
+    });
+  }
+  async function resolveBestUrl(item){
+    if(item.uhd === item.standard) return item.uhd;
+    const ok = await testImage(item.uhd);
+    return ok ? item.uhd : item.standard;
+  }
+  function showImage(url){
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.onload = ()=>{
+        inactiveLayer.style.backgroundImage = 'url("' + url + '")';
+        inactiveLayer.style.opacity = "1";
+        activeLayer.style.opacity = "0";
+        const tmp = activeLayer; activeLayer = inactiveLayer; inactiveLayer = tmp;
+        resolve(true);
+      };
+      img.onerror = ()=> resolve(false);
+      img.src = url;
+    });
+  }
+
+  /* ===================== BING FETCH (multi-tier fallback) ===================== */
+  async function fetchBingOfficial(market, proxyBuilder){
+    const target = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=8&mkt=" + market;
+    const res = await fetch(proxyBuilder(target), {cache:"no-store"});
+    if(!res.ok) throw new Error("proxy gagal");
+    const data = await res.json();
+    if(!data.images || !data.images.length) throw new Error("kosong");
+    return data.images.map(img => ({
+      uhd: "https://www.bing.com" + img.urlbase + "_UHD.jpg",
+      standard: "https://www.bing.com" + img.url,
+      title: (img.copyright || "").split("(")[0].trim(),
+    }));
+  }
+  async function fetchBingBiturl(market){
+    const results = [];
+    for(let i=0;i<8;i++){
+      try{
+        const r = await fetch("https://bing.biturl.top/?resolution=UHD&format=json&index=" + i + "&mkt=" + market, {cache:"no-store"});
+        if(!r.ok) continue;
+        const j = await r.json();
+        if(j && j.url) results.push({uhd:j.url, standard:j.url, title:(j.copyright||"").split("(")[0].trim()});
+      }catch(e){ /* lanjut */ }
+    }
+    return results;
+  }
+  async function fetchBing(market){
+    const tiers = [
+      ()=> fetchBingOfficial(market, t => "https://api.allorigins.win/raw?url=" + encodeURIComponent(t)),
+      ()=> fetchBingOfficial(market, t => "https://corsproxy.io/?url=" + encodeURIComponent(t)),
+      ()=> fetchBingBiturl(market)
+    ];
+    for(const tier of tiers){
+      try{
+        const list = await tier();
+        if(list && list.length) return list;
+      }catch(e){ /* coba tier berikutnya */ }
+    }
+    return null;
+  }
+
+  /* ===================== WALLPAPER PIPELINE ===================== */
+  function useGradientFallback(){
+    activeLayer.style.backgroundImage = "none";
+    activeLayer.style.background = "linear-gradient(160deg,#1c1a22,#2b2733 55%,#1c1a22)";
+    activeLayer.style.opacity = "1";
+    attribution.textContent = "";
+  }
+  async function displayCurrent(){
+    if(!wallpapers.length) return useGradientFallback();
+    const item = wallpapers[currentIndex];
+    const url = await resolveBestUrl(item);
+    const ok = await showImage(url);
+    if(!ok) return useGradientFallback();
+    attribution.textContent = item.title ? ("\u{1F4F7} " + item.title) : "";
+  }
+  function nextWallpaper(){
+    if(!wallpapers.length) return;
+    currentIndex = (currentIndex + 1) % wallpapers.length;
+    displayCurrent();
+  }
+  function prevWallpaper(){
+    if(!wallpapers.length) return;
+    currentIndex = (currentIndex - 1 + wallpapers.length) % wallpapers.length;
+    displayCurrent();
+  }
+  function startRotationTimer(){
+    if(rotationTimer) clearInterval(rotationTimer);
+    rotationTimer = setInterval(()=>{ nextWallpaper(); nextQuote(); }, (settings.intervalSec || 300) * 1000);
+  }
+
+  async function loadWallpapers(){
+    if(settings.source === "custom"){
+      if(customImages.length){
+        wallpapers = customImages.map(src => ({uhd:src, standard:src, title:"Galeri saya"}));
+      } else {
+        wallpapers = [];
+        showToast("Galeri kosong. Tambahkan gambar di Pengaturan.");
+      }
+    } else {
+      const list = await fetchBing(settings.market || "id-ID");
+      if(list && list.length){
+        wallpapers = list;
+      } else if(customImages.length){
+        wallpapers = customImages.map(src => ({uhd:src, standard:src, title:"Galeri saya"}));
+        showToast("Bing tidak dapat dimuat, menggunakan galeri Anda.");
+      } else {
+        wallpapers = [];
+        showToast("Bing tidak dapat dimuat. Coba lagi atau tambahkan gambar sendiri.");
+      }
+    }
+    currentIndex = 0;
+    await displayCurrent();
+    startRotationTimer();
+  }
+
+  /* ===================== CUSTOM IMAGES UI ===================== */
+  function renderThumbs(){
+    thumbGrid.innerHTML = "";
+    customImages.forEach((src, idx)=>{
+      const div = document.createElement("div");
+      div.className = "thumb";
+      const img = document.createElement("img");
+      img.src = src;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.title = "Hapus";
+      btn.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        customImages.splice(idx,1);
+        if(!safeSet(CUSTOM_KEY, customImages)) showToast("Gagal menyimpan perubahan galeri.");
+        renderThumbs();
+        if(settings.source === "custom") loadWallpapers();
+      });
+      div.appendChild(img); div.appendChild(btn);
+      thumbGrid.appendChild(div);
+    });
+  }
+  addImagesBtn.addEventListener("click", ()=> customFileInput.click());
+  customFileInput.addEventListener("change", (e)=>{
+    const files = Array.from(e.target.files || []).slice(0, 20);
+    let pending = files.length;
+    if(!pending) return;
+    files.forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        customImages.push(reader.result);
+        pending--;
+        if(pending === 0){
+          if(!safeSet(CUSTOM_KEY, customImages)){
+            showToast("Galeri terlalu besar untuk disimpan permanen, namun tetap aktif untuk sesi ini.");
+          }
+          renderThumbs();
+          if(settings.source === "custom") loadWallpapers();
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    customFileInput.value = "";
+  });
+  clearCustom.addEventListener("click", ()=>{
+    customImages = [];
+    safeSet(CUSTOM_KEY, customImages);
+    renderThumbs();
+    if(settings.source === "custom") loadWallpapers();
+  });
+
+  /* ===================== SETTINGS PANEL ===================== */
+  function applySourceUI(){
+    sourceBing.checked = settings.source === "bing";
+    sourceCustom.checked = settings.source === "custom";
+    bingOptions.style.display = settings.source === "bing" ? "block" : "none";
+    customOptions.style.display = settings.source === "custom" ? "block" : "none";
+  }
+  function applyIntervalUI(){
+    intervalRange.value = settings.intervalSec;
+    intervalLabel.textContent = formatDuration(settings.intervalSec);
+    Array.from(presets.children).forEach(btn=>{
+      btn.classList.toggle("active", Number(btn.dataset.sec) === settings.intervalSec);
+    });
+  }
+  function formatDuration(sec){
+    if(sec < 60) return sec + " detik";
+    if(sec < 3600) return Math.round(sec/60) + " menit";
+    return (sec/3600).toFixed(sec % 3600 === 0 ? 0 : 1) + " jam";
+  }
+
+  [sourceBing, sourceCustom].forEach(radio=>{
+    radio.addEventListener("change", ()=>{
+      settings.source = sourceBing.checked ? "bing" : "custom";
+      safeSet(SETTINGS_KEY, settings);
+      applySourceUI();
+      loadWallpapers();
+    });
+  });
+  marketSelect.addEventListener("change", ()=>{
+    settings.market = marketSelect.value;
+    safeSet(SETTINGS_KEY, settings);
+    if(settings.source === "bing") loadWallpapers();
+  });
+  refreshBing.addEventListener("click", ()=>{
+    showToast("Memuat ulang dari Bing…");
+    loadWallpapers();
+  });
+  presets.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-sec]");
+    if(!btn) return;
+    settings.intervalSec = Number(btn.dataset.sec);
+    safeSet(SETTINGS_KEY, settings);
+    applyIntervalUI();
+    startRotationTimer();
+  });
+  intervalRange.addEventListener("input", ()=>{
+    settings.intervalSec = Number(intervalRange.value);
+    intervalLabel.textContent = formatDuration(settings.intervalSec);
+    Array.from(presets.children).forEach(btn=> btn.classList.toggle("active", Number(btn.dataset.sec) === settings.intervalSec));
+  });
+  intervalRange.addEventListener("change", ()=>{
+    safeSet(SETTINGS_KEY, settings);
+    startRotationTimer();
+  });
+  format24.addEventListener("change", ()=>{
+    settings.format24 = format24.checked;
+    safeSet(SETTINGS_KEY, settings);
+    updateClock();
+  });
+  showSeconds.addEventListener("change", ()=>{
+    settings.showSeconds = showSeconds.checked;
+    safeSet(SETTINGS_KEY, settings);
+    updateClock();
+  });
+
+  function openPanel(){ settingsPanel.classList.add("open"); settingsPanel.setAttribute("aria-hidden","false"); }
+  function closePanel(){ settingsPanel.classList.remove("open"); settingsPanel.setAttribute("aria-hidden","true"); }
+  settingsToggle.addEventListener("click", ()=> settingsPanel.classList.contains("open") ? closePanel() : openPanel());
+  closeSettings.addEventListener("click", closePanel);
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape") closePanel();
+    if(e.key === "ArrowRight"){ nextWallpaper(); startRotationTimer(); }
+    if(e.key === "ArrowLeft"){ prevWallpaper(); startRotationTimer(); }
+    if(e.key.toLowerCase() === "f") toggleFullscreen();
+  });
+
+  /* ===================== NAVIGASI MANUAL ===================== */
+  prevZone.addEventListener("click", ()=>{ prevWallpaper(); startRotationTimer(); });
+  nextZone.addEventListener("click", ()=>{ nextWallpaper(); startRotationTimer(); });
+
+  /* ===================== FULLSCREEN ===================== */
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(()=> showToast("Layar penuh tidak didukung di perangkat ini."));
+    } else {
+      document.exitFullscreen();
+    }
+  }
+  fullscreenToggle.addEventListener("click", toggleFullscreen);
+
+  /* ===================== INIT ===================== */
+  function init(){
+    marketSelect.value = settings.market;
+    applySourceUI();
+    applyIntervalUI();
+    format24.checked = settings.format24;
+    showSeconds.checked = settings.showSeconds;
+    renderThumbs();
+    updateClock();
+    shuffleQuotes();
+    nextQuote();
+    loadWallpapers();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
